@@ -89,4 +89,5 @@ if __name__ == '__main__':
     dataset = pd.concat([d1, d2, d3])
     k = 5
     df_knn = clean_data(dataset, k)
+    df_knn.to_csv('CRC_clusters_neighborhoods_markers_cleaned.csv', index=False)
 
