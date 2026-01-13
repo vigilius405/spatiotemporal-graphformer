@@ -53,18 +53,85 @@ def clean_data(dataset: pd.DataFrame, k: int) -> pd.DataFrame:
                'neighborhood number final', 'neighborhood name']
 
     new_df.drop(to_drop, axis=1)
-    coords = new_df[['X:X','Y:Y','Z:Z']].to_numpy()
-    knn = NearestNeighbors(n_neighbors=k + 1, metric='euclidean')
-    knn.fit(coords)
-    _, indices = knn.kneighbors(coords)
-    cell_ids = new_df["CellID"].values
+    # coords = new_df[['X:X','Y:Y','Z:Z']].to_numpy()
+    # knn = NearestNeighbors(n_neighbors=k + 1, metric='euclidean')
+    # knn.fit(coords)
+    # _, indices = knn.kneighbors(coords)
+    # cell_ids = new_df["CellID"].values
 
-    neighbor_ids = [
-        cell_ids[idx[1:]].tolist()   # skip self (idx[0])
-        for idx in indices
-    ]
+    # neighbor_ids = [
+    #     cell_ids[idx[1:]].tolist()   # skip self (idx[0])
+    #     for idx in indices
+    # ]
 
-    new_df['KNN'] = neighbor_ids
+    # new_df['KNN'] = neighbor_ids
+    # new_df['KNN_idcs'] = [idx[1:] for idx in indices]
+
+    import numpy as np
+import pandas as pd
+from sklearn.neighbors import NearestNeighbors
+
+def clean_data(dataset: pd.DataFrame, k: int) -> pd.DataFrame:
+    """
+    Generates a dataframe with the following columns:
+        Graph ID    Cell ID     X   Y   Z   Neighbors   49 protein cols     8 more protein cols     15 +cols
+    
+    Computes KNN separately for each graph to ensure neighbors are within the same tissue sample.
+    
+    :param dataset: Dataset from "Coordinated cellular neighborhoods orchestrate antitumoral immunity at the colorectal cancer invasive front"
+    :type dataset: pd.DataFrame
+    :param k: k nearest neighbors for calculating neighbors
+    :type k: int
+    """
+    new_df = dataset.copy()
+    new_df['GraphID'] = new_df['File Name'] + ' ' + new_df['patients'].astype(str) + ' ' + new_df['Region'] + ' ' + new_df['tile_nr:tile_nr'].astype(str)
+
+    to_drop = ['ClusterID', 'EventID', 'File Name', 'Region', 'TMA_AB', 
+               'TMA_12', 'Index in File', 'groups', 'patients', 'spots', 
+               'X_withinTile:X_withinTile', 'Y_withinTile:Y_withinTile', 
+               'Profile_Homogeneity:Fiter1', 'ClusterSize', 'ClusterName', 'neighborhood10', 
+               'neighborhood number final', 'neighborhood name']
+
+    new_df = new_df.drop(to_drop, axis=1)
+    
+    # Compute KNN separately for each graph
+    print(f"Computing KNN (k={k}) for each graph separately...")
+    unique_graphs = new_df['GraphID'].unique()
+    print(f"Found {len(unique_graphs)} unique graphs")
+    
+    all_neighbor_ids = []
+    
+    for graph_id in unique_graphs:
+        graph_mask = new_df['GraphID'] == graph_id
+        graph_df = new_df[graph_mask]
+        
+        if len(graph_df) < k + 1:
+            print(f"Warning: Graph {graph_id} has only {len(graph_df)} cells (less than k+1={k+1})")
+            # For graphs with too few cells, use all other cells as neighbors
+            for idx in graph_df.index:
+                others = [cell_id for i, cell_id in zip(graph_df.index, graph_df['CellID']) if i != idx]
+                # Pad with self if needed
+                while len(others) < k:
+                    others.append(graph_df.loc[idx, 'CellID'])
+                all_neighbor_ids.append(others[:k])
+        else:
+            # Extract coordinates for this graph
+            coords = graph_df[['X:X', 'Y:Y', 'Z:Z']].to_numpy()
+            cell_ids = graph_df['CellID'].values
+            
+            # Fit KNN on this graph only
+            knn = NearestNeighbors(n_neighbors=k + 1, metric='euclidean')
+            knn.fit(coords)
+            _, indices = knn.kneighbors(coords)
+            
+            # Get neighbor cell IDs (skip self at index 0)
+            for idx in indices:
+                neighbor_ids = cell_ids[idx[1:]].tolist()
+                all_neighbor_ids.append(neighbor_ids)
+    
+    new_df['KNN'] = all_neighbor_ids
+    
+    print(f"KNN computation complete! Total cells: {len(new_df)}")
 
     return new_df
 
@@ -89,5 +156,10 @@ if __name__ == '__main__':
     dataset = pd.concat([d1, d2, d3])
     k = 5
     df_knn = clean_data(dataset, k)
+    #print(df_knn.head())
+    # Verify
+    print("\nSample of cleaned data:")
+    print(df_knn[['GraphID', 'CellID', 'X:X', 'Y:Y', 'Z:Z', 'KNN']].head())
+    print(f'Number cells: {len(df_knn)}, Number unique CellIDs {len(df_knn['CellID'].unique())}')
+    # Save
     df_knn.to_csv('CRC_clusters_neighborhoods_markers_cleaned.csv', index=False)
-
