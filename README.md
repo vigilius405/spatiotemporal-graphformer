@@ -1,6 +1,3 @@
-# spatiotemporal-graphformer
-Learning developmental spatiotemporal proteomics
-
 # Spatial Proteomics GraphFormer
 
 A deep learning framework for analyzing spatial dependencies in protein expression data from colorectal cancer tissue samples. This project investigates whether protein expression in individual cells can be predicted from their spatial neighborhood context using graph neural networks.
