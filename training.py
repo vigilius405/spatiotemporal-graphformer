@@ -207,7 +207,7 @@ def get_protein_cols(df, protein_start_col, protein_end_col):
 def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
                       hidden_dim=256, num_layers=3, num_heads=4,
                       batch_size=64, num_epochs=50, lr=1e-4,
-                      test_size=0.2, rebuild_knn=True, 
+                      test_size=0.2, rebuild_knn=True, max_neighbors=5,
                       device='cuda' if torch.cuda.is_available() else 'cpu'):
     """
     Main function to train GraphFormer model.
@@ -252,9 +252,9 @@ def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
     
     # Rebuild KNN within each split if requested
     if rebuild_knn:
-        print("Rebuilding KNN relationships within train/test splits...")
+        print(f"Rebuilding KNN (k={max_neighbors}) relationships within train/test splits...")
         
-        def rebuild_knn_for_split(split_df, k=5):
+        def rebuild_knn_for_split(split_df, k=max_neighbors):
             """Rebuild KNN using only cells within this split."""
             split_df = split_df.reset_index(drop=True)
             new_knn = []
@@ -293,8 +293,8 @@ def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
     baseline_r2 = simple_neighbor_average_baseline(test_df, protein_cols)
     
     # Create datasets
-    train_dataset = SpatialProteomicsDataset(train_df, protein_cols)
-    test_dataset = SpatialProteomicsDataset(test_df, protein_cols)
+    train_dataset = SpatialProteomicsDataset(train_df, protein_cols, max_neighbors=max_neighbors)
+    test_dataset = SpatialProteomicsDataset(test_df, protein_cols, max_neighbors=max_neighbors)
     
     # Create dataloaders with custom collate
     train_loader = DataLoader(
