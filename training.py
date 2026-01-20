@@ -10,6 +10,7 @@ from sklearn.metrics import mean_absolute_error, r2_score
 from scipy.stats import pearsonr
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
 
 from graphformer import SpatialProteomicsDataset, GraphAttention, GraphFormer
 
@@ -390,7 +391,6 @@ def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
         print(f"{p['name']:<50} {p['r2']:>8.4f} {p['mean']:>10.2f} {p['std']:>10.2f} {p['max']:>10.2f}")
 
     # Check correlation between R² and expression magnitude
-    import matplotlib.pyplot as plt
     means = [p['mean'] for p in protein_stats]
     r2s = [p['r2'] for p in protein_stats]
 
@@ -420,56 +420,58 @@ def simple_neighbor_average_baseline(df, protein_cols):
     predictions = []
     actuals = []
     
-    cell_to_idx = {cell_id: idx for idx, cell_id in enumerate(df['CellID'])}
+    #cell_to_idx = {cell_id: idx for idx, cell_id in enumerate(df['CellID'])}
+    cell_to_data = {cell_id: row for cell_id, row in zip(df['CellID'], df[protein_cols].values)}
     
-    for idx, row in df.iterrows():
+    for _, row in df.iterrows():
         knn_str = row['KNN']
-        # if isinstance(neighbors, str):
-        #     neighbors = ast.literal_eval(neighbors)
-        # Handle different KNN formats
-        if isinstance(knn_str, (list, np.ndarray)):
-            # Already a list (from rebuild_knn or direct data)
-            neighbors = [int(n) for n in knn_str]
-        elif isinstance(knn_str, str):
-            try:
-                # Try parsing as Python literal
-                neighbors = ast.literal_eval(knn_str)
-                if isinstance(neighbors, (list, tuple)):
-                    neighbors = [int(n) for n in neighbors]
-                else:
-                    neighbors = [int(neighbors)]
-            except (ValueError, SyntaxError):
-                # Fallback: parse as comma-separated values
-                try:
-                    neighbors = [int(x.strip()) for x in knn_str.strip('[]').split(',')]
-                except:
-                    print(f"Warning: Could not parse KNN for cell at index {idx}: {knn_str}")
-                    neighbors = []
-        else:
-            neighbors = []
+        #if isinstance(knn_str, (list, np.ndarray)):
+        neighbors = [int(n) for n in knn_str]
         
         # Get neighbor features
-        neighbor_rows = []
+        neighbor_features = []
         for n in neighbors:
-            if n in cell_to_idx:
-                neighbor_rows.append(cell_to_idx[n])
+            if n in cell_to_data:
+                neighbor_features.append(cell_to_data[n])
         
-        if neighbor_rows:
-            neighbor_features = df.iloc[neighbor_rows][protein_cols].values
-            pred = neighbor_features.mean(axis=0)
+        if neighbor_features:
+            pred = np.mean(neighbor_features, axis=0)
         else:
             pred = df[protein_cols].mean().values
         
         predictions.append(pred)
-        actuals.append(df.iloc[idx][protein_cols].values)
+        actuals.append(row[protein_cols].values)
     
     predictions = np.array(predictions)
     actuals = np.array(actuals)
     
-    from sklearn.metrics import r2_score
-    r2 = r2_score(actuals.flatten(), predictions.flatten())
-    print(f"Neighbor Average Baseline R²: {r2:.4f}")
-    return r2
+    # r2 = r2_score(actuals.flatten(), predictions.flatten())
+    # print(f"Neighbor Average Baseline R²: {r2:.4f}")
+    # return r2
+
+    per_protein_r2 = []
+    for i, protein in enumerate(protein_cols):
+        r2 = r2_score(actuals[:, i], predictions[:, i])
+        per_protein_r2.append((protein, r2))
+    
+    # Sort by R²
+    per_protein_r2.sort(key=lambda x: x[1], reverse=True)
+    
+    print("\nNeighbor Average Baseline - Best Proteins:")
+    for protein, r2 in per_protein_r2[:10]:
+        print(f"  {protein[:50]:<50} R²: {r2:7.4f}")
+    
+    print("\nNeighbor Average Baseline - Worst Proteins:")
+    for protein, r2 in per_protein_r2[-10:]:
+        print(f"  {protein[:50]:<50} R²: {r2:7.4f}")
+    
+    overall_r2 = r2_score(actuals.flatten(), predictions.flatten())
+    mean_protein_r2 = np.mean([r2 for _, r2 in per_protein_r2])
+    
+    print(f"\nOverall R²: {overall_r2:.4f}")
+    print(f"Mean Protein R²: {mean_protein_r2:.4f}")
+    
+    return per_protein_r2
 
 # ============================================================================
 # Usage Details

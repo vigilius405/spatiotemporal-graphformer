@@ -38,7 +38,7 @@ class SpatialProteomicsDataset(Dataset):
         # Get neighbors
         knn_str = self.df.iloc[idx]['KNN']
         
-        # Handle different KNN formats
+        # Handle different KNN formats -- wasn't sure exactly how it worked to store list in csv
         if isinstance(knn_str, (list, np.ndarray)):
             # Already a list (from rebuild_knn or direct data)
             neighbors = [int(n) for n in knn_str]
