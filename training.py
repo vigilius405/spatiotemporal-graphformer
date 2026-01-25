@@ -209,7 +209,7 @@ def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
                       batch_size=64, num_epochs=50, lr=1e-4,
                       test_size=0.2, rebuild_knn=True, max_neighbors=5,
                       device='cuda' if torch.cuda.is_available() else 'cpu',
-                      test_baseline=True):
+                      test_baseline=True, dropout=0.1, l2_reg=0):
     """
     Main function to train GraphFormer model.
     
@@ -226,6 +226,9 @@ def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
         test_size: Fraction of data for testing
         rebuild_knn: If True, rebuild KNN within each split to avoid cross-split neighbors
         device: Device to train on
+        test_baseline: If True, run baseline correlation metrics before training
+        dropout: Dropout probability in GraphFormer
+        l2_reg: Weight decay (L2 penalty) for Adam optimization algorithm
     """
     
     # Extract protein columns
@@ -317,14 +320,15 @@ def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
         num_proteins=len(protein_cols),
         hidden_dim=hidden_dim,
         num_layers=num_layers,
-        num_heads=num_heads
+        num_heads=num_heads,
+        dropout=dropout,
     ).to(device)
     
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
     
     # Loss and optimizer
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=l2_reg)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs)
     
     # Training loop
