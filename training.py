@@ -207,8 +207,9 @@ def get_protein_cols(df, protein_start_col, protein_end_col):
 def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
                       hidden_dim=256, num_layers=3, num_heads=4,
                       batch_size=64, num_epochs=50, lr=1e-4,
-                      test_size=0.2, rebuild_knn=True, 
-                      device='cuda' if torch.cuda.is_available() else 'cpu'):
+                      test_size=0.2, rebuild_knn=True, max_neighbors=5,
+                      device='cuda' if torch.cuda.is_available() else 'cpu',
+                      test_baseline=True, dropout=0.1, l2_reg=0):
     """
     Main function to train GraphFormer model.
     
@@ -225,6 +226,9 @@ def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
         test_size: Fraction of data for testing
         rebuild_knn: If True, rebuild KNN within each split to avoid cross-split neighbors
         device: Device to train on
+        test_baseline: If True, run baseline correlation metrics before training
+        dropout: Dropout probability in GraphFormer
+        l2_reg: Weight decay (L2 penalty) for Adam optimization algorithm
     """
     
     # Extract protein columns
@@ -252,9 +256,9 @@ def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
     
     # Rebuild KNN within each split if requested
     if rebuild_knn:
-        print("Rebuilding KNN relationships within train/test splits...")
+        print(f"Rebuilding KNN (k={max_neighbors}) relationships within train/test splits...")
         
-        def rebuild_knn_for_split(split_df, k=5):
+        def rebuild_knn_for_split(split_df, k=max_neighbors):
             """Rebuild KNN using only cells within this split."""
             split_df = split_df.reset_index(drop=True)
             new_knn = []
@@ -289,12 +293,13 @@ def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
         print("KNN rebuild complete!")
 
     # Baselining
-    print("\nTesting neighbor average baseline...")
-    baseline_r2 = simple_neighbor_average_baseline(test_df, protein_cols)
+    if test_baseline:
+        print("\nTesting neighbor average baseline...")
+        baseline_r2 = simple_neighbor_average_baseline(test_df, protein_cols)
     
     # Create datasets
-    train_dataset = SpatialProteomicsDataset(train_df, protein_cols)
-    test_dataset = SpatialProteomicsDataset(test_df, protein_cols)
+    train_dataset = SpatialProteomicsDataset(train_df, protein_cols, max_neighbors=max_neighbors)
+    test_dataset = SpatialProteomicsDataset(test_df, protein_cols, max_neighbors=max_neighbors)
     
     # Create dataloaders with custom collate
     train_loader = DataLoader(
@@ -315,14 +320,15 @@ def train_graphformer(df, protein_start_col, protein_end_col, normalize=True,
         num_proteins=len(protein_cols),
         hidden_dim=hidden_dim,
         num_layers=num_layers,
-        num_heads=num_heads
+        num_heads=num_heads,
+        dropout=dropout,
     ).to(device)
     
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
     
     # Loss and optimizer
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=l2_reg)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs)
     
     # Training loop

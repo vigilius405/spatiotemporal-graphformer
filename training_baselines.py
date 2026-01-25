@@ -245,6 +245,7 @@ def train_pyg_model(df, protein_start_col, protein_end_col,
         test_size: Fraction of data for testing
         rebuild_knn: Whether to rebuild KNN after split
         device: Device to train on
+        l2_reg: Weight decay (L2 penalty) for Adam optimization algorithm
     """
     
     # Extract protein columns
@@ -338,7 +339,7 @@ def train_pyg_model(df, protein_start_col, protein_end_col,
     
     # Loss and optimizer
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=l2_reg)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs)
     
     # Training loop
