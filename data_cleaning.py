@@ -71,7 +71,7 @@ def clean_data(dataset: pd.DataFrame, k: int) -> pd.DataFrame:
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 
-def clean_data(dataset: pd.DataFrame, k: int) -> pd.DataFrame:
+def clean_data(dataset: pd.DataFrame, k: int, zsep: bool) -> pd.DataFrame:
     """
     Generates a dataframe with the following columns:
         Graph ID    Cell ID     X   Y   Z   Neighbors   49 protein cols     8 more protein cols     15 +cols
@@ -79,12 +79,14 @@ def clean_data(dataset: pd.DataFrame, k: int) -> pd.DataFrame:
     Computes KNN separately for each graph to ensure neighbors are within the same tissue sample.
     
     :param dataset: Dataset from "Coordinated cellular neighborhoods orchestrate antitumoral immunity at the colorectal cancer invasive front"
-    :type dataset: pd.DataFrame
     :param k: k nearest neighbors for calculating neighbors
-    :type k: int
+    :param k: whether to setparate out z stacks into different graphs or not
     """
     new_df = dataset.copy()
-    new_df['GraphID'] = new_df['File Name'] + ' ' + new_df['patients'].astype(str) + ' ' + new_df['Region'] + ' ' + new_df['tile_nr:tile_nr'].astype(str)
+    if zsep:
+        new_df['GraphID'] = new_df['File Name'] + ' ' + new_df['patients'].astype(str) + ' ' + new_df['Region'] + ' ' + new_df['tile_nr:tile_nr'].astype(str) + ' ' + new_df['Z:Z'].astype(str)
+    else:
+        new_df['GraphID'] = new_df['File Name'] + ' ' + new_df['patients'].astype(str) + ' ' + new_df['Region'] + ' ' + new_df['tile_nr:tile_nr'].astype(str)
 
     to_drop = ['ClusterID', 'EventID', 'File Name', 'Region', 'TMA_AB', 
                'TMA_12', 'Index in File', 'groups', 'patients', 'spots', 
@@ -148,6 +150,9 @@ def split_file(dataset: pd.DataFrame) -> None:
     third_part.to_csv('CRC_clusters_neighborhoods_markers_3.csv', index=False)
 
 if __name__ == '__main__':
+    #comparison with Z stacks in same graph is not perfect unless some rescaling is done
+    #however without Z stack separation, some of the graphs are too small to do anything
+    separate_z = False 
     # dataset = pd.read_csv('CRC_clusters_neighborhoods_markers.csv', index_col=0)
     # split_file(dataset)
     d1 = pd.read_csv('CRC_clusters_neighborhoods_markers_1.csv')
@@ -155,11 +160,20 @@ if __name__ == '__main__':
     d3 = pd.read_csv('CRC_clusters_neighborhoods_markers_3.csv')
     dataset = pd.concat([d1, d2, d3])
     k = 5
-    df_knn = clean_data(dataset, k)
+    if separate_z:
+        filename = 'CRC_clusters_neighborhoods_markers_cleaned_zsep.csv'
+        df_knn = clean_data(dataset, k, True)
+    else:
+        filename = 'CRC_clusters_neighborhoods_markers_cleaned.csv'
+        df_knn = clean_data(dataset, k, False)
     #print(df_knn.head())
     # Verify
     print("\nSample of cleaned data:")
     print(df_knn[['GraphID', 'CellID', 'X:X', 'Y:Y', 'Z:Z', 'KNN']].head())
     print(f'Number cells: {len(df_knn)}, Number unique CellIDs {len(df_knn['CellID'].unique())}')
+
+    print("\nAverage graph size:")
+    graphid_valcounts = df_knn['GraphID'].value_counts()
+    print(f'Number of cells per graph metrics -- mean: {graphid_valcounts.mean()}, sd: {graphid_valcounts.std()}')
     # Save
-    df_knn.to_csv('CRC_clusters_neighborhoods_markers_cleaned.csv', index=False)
+    df_knn.to_csv(filename, index=False)

@@ -15,8 +15,8 @@ A deep learning framework for analyzing spatial dependencies in protein expressi
 - **Features**: 57 protein markers per cell, spatial coordinates (X, Y, Z), cell metadata
 - **Scale**: ~250,000+ cells across multiple tissue samples (GraphIDs)
 
-### Key Finding
-**Negative Result**: Our analysis found from a range of model complexities and baselines that protein expression in colorectal cancer cells is **NOT strongly predictable from immediate spatial neighbors** (k=2-20).
+### Key Findings
+**Negative Result**: Our analysis found from a range of model complexities and baselines that protein expression in colorectal cancer cells is **NOT strongly predictable from immediate spatial neighbors** (k=2-20). The GraphFormer is trained on the objective of predicting the protein expression in the current cell based on surrounding cells. The failure to learn this relationship effectively was shown through a variety of models (GraphFormer, GAT, CDN, GraphSAGE, simple average baselines). The poor predictiveness could be due to diverse tissues sampled, which split up the already somewhat small cell pool (~250k) into differing groups. Alternatively, the nature of the cancerous cells could decorrelate protein expression compared with healthy tissue. It remains to compare these methods on additional spatial proteomics datasets. The chosen dataset was originally used due to its accessibility. The only protein that showed higher predictive correlation was CD34, which makes sense given its role as a cell adhesion protein.
 
 ## Repository Structure
 ```

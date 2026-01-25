@@ -4,8 +4,14 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader, PyGDataLoader
+#from torch.utils.data import Dataset, DataLoader, PyGDataLoader
 from torch_geometric.nn import GCNConv, GATConv, SAGEConv
+from torch_geometric.data import Data
+from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import StandardScaler
+from scipy.stats import pearsonr
 
 # def nearest_neighbor_baseline(test_df, train_df, protein_cols, k=5):
 #     predictions = []
@@ -118,12 +124,12 @@ def df_to_pyg_data(df, protein_cols):
         # Parse KNN
         if isinstance(knn_str, (list, np.ndarray)):
             neighbors = [int(n) for n in knn_str]
-        elif isinstance(knn_str, str):
-            try:
-                neighbors = ast.literal_eval(knn_str)
-                neighbors = [int(n) for n in neighbors]
-            except:
-                neighbors = [int(x.strip()) for x in knn_str.strip('[]').split(',')]
+        # elif isinstance(knn_str, str):
+        #     try:
+        #         neighbors = ast.literal_eval(knn_str)
+        #         neighbors = [int(n) for n in neighbors]
+        #     except:
+        #         neighbors = [int(x.strip()) for x in knn_str.strip('[]').split(',')]
         else:
             neighbors = []
         
@@ -221,7 +227,7 @@ def train_pyg_model(df, protein_start_col, protein_end_col,
                     model_type='GCN',  # 'GCN', 'GAT', or 'GraphSAGE'
                     hidden_dim=256, num_layers=3, heads=4,
                     num_epochs=50, lr=1e-4,
-                    test_size=0.2, rebuild_knn=True,
+                    test_size=0.2, rebuild_knn=True, normalize=True,
                     device='cuda' if torch.cuda.is_available() else 'cpu'):
     """
     Train a PyTorch Geometric model (GCN/GAT/GraphSAGE).
@@ -240,8 +246,6 @@ def train_pyg_model(df, protein_start_col, protein_end_col,
         rebuild_knn: Whether to rebuild KNN after split
         device: Device to train on
     """
-    import ast
-    from sklearn.model_selection import train_test_split
     
     # Extract protein columns
     if isinstance(protein_start_col, tuple) and isinstance(protein_end_col, tuple):
@@ -254,6 +258,13 @@ def train_pyg_model(df, protein_start_col, protein_end_col,
         protein_cols = df.columns[start_idx:end_idx].tolist()
     
     print(f"Training {model_type} on {len(protein_cols)} protein markers")
+
+    # Normalize proteins BEFORE splitting
+    if normalize:
+        print("Normalizing protein expression (z-score per protein)...")
+        scaler = StandardScaler()
+        df[protein_cols] = scaler.fit_transform(df[protein_cols])
+        print(f"After normalization - Mean: {df[protein_cols].mean().mean():.4f}, Std: {df[protein_cols].std().mean():.4f}")
     
     # Split data by GraphID
     unique_graphs = df['GraphID'].unique()
@@ -269,7 +280,6 @@ def train_pyg_model(df, protein_start_col, protein_end_col,
     # Rebuild KNN if requested
     if rebuild_knn:
         print("Rebuilding KNN relationships within train/test splits...")
-        from sklearn.neighbors import NearestNeighbors
         
         def rebuild_knn_for_split(split_df, k=5):
             split_df = split_df.reset_index(drop=True)

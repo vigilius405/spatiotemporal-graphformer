@@ -482,6 +482,7 @@ if __name__ == "__main__":
     #more layers = wider net of neighbors that influence each cell
     model, train_dataset, test_dataset = train_graphformer(
         df, protein_start_col=(1,57), protein_end_col=(50,65), normalize=True,
-        hidden_dim=64, num_layers=3, num_heads=4, batch_size=64, num_epochs=3, lr=1e-4
+        hidden_dim=64, num_layers=3, num_heads=4, batch_size=64, num_epochs=3, lr=1e-4,
+        rebuild_knn=True
     ) #hidden dim should be 256, layers 3
     #start end cols 'CD44 - stroma:Cyc_2_ch_2' 'CD138 - plasma cells:Cyc_21_ch_3'
