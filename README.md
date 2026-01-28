@@ -16,7 +16,25 @@ A deep learning framework for analyzing spatial dependencies in protein expressi
 - **Scale**: ~250,000+ cells across multiple tissue samples (GraphIDs)
 
 ### Key Findings
-**Negative Result**: Our analysis found from a range of model complexities and baselines that protein expression in colorectal cancer cells is **NOT strongly predictable from immediate spatial neighbors** (k=2-20). The GraphFormer is trained on the objective of predicting the protein expression in the current cell based on surrounding cells. The failure to learn this relationship effectively was shown through a variety of models (GraphFormer, GAT, CDN, GraphSAGE, simple average baselines). The poor predictiveness could be due to diverse tissues sampled, which split up the already somewhat small cell pool (~250k) into differing groups. Alternatively, the nature of the cancerous cells could decorrelate protein expression compared with healthy tissue. It remains to compare these methods on additional spatial proteomics datasets. The chosen dataset was originally used due to its accessibility. The only protein that showed higher predictive correlation was CD34, which makes sense given its role as a cell adhesion protein.
+Our analysis found that protein expression in colorectal cancer cells is strongly predictable from immediate spatial neighbors (k=5) for some protein markers, while being completely unpredictable for others. The GraphFormer is trained on the objective of predicting the protein expression in the current cell based on surrounding cells. This model outperformed a veriety of models (GAT, CDN, GraphSAGE, simple average baselines). Shown below are the top 5 best and bottom 5 worst predicted protein markers. Going through some of these proteins, we can see why their correlation is physiologically relevant: cytokeratin and CD34 are implicated in intercellualr adhesion, meaning cells that have high levels of these proteins are likely attached to other cells with high levels. The least correlated proteins are mostly cell surface markers of immune cells; this makes sense, as immune cells are more likely than other cell types to be traveling alone, surrounded by different cell types. Other than this relationship with immune cells, we did not find much to indicate that certain cell types were more correlated with their neighbors than others. Note that these results should also be tested on healthy tissue, and with larger cell numbers per sample. This dataset is simply a demonstration that spatial graphformers may provide interesting insights into the patterns of spatial proteomics.
+
+Best predicted proteins:
+Protein                                                  R²  
+---------------------------------------------------------------
+Cytokeratin - epithelia:Cyc_10_ch_2                  0.9622      
+Na-K-ATPase - membranes:Cyc_9_ch_2                   0.8859     
+CD34 - vasculature:Cyc_20_ch_3                       0.8695     
+CD138 - plasma cells:Cyc_21_ch_3                     0.8607     
+CD68 - macrophages:Cyc_18_ch_4                       0.8484     
+
+Worst predicted proteins:
+Protein                                                  R²     
+----------------------------------------------------------------
+CD25 - IL-2 Ra:Cyc_11_ch_4                           0.0875     
+CD2 - T cells:Cyc_7_ch_4                             0.0499      
+LAG-3 - checkpoint:Cyc_8_ch_4                        0.0305     
+CD8 - cytotoxic T cells:Cyc_3_ch_2                  -0.0011     
+MUC-1 - epithelia:Cyc_7_ch_2                        -0.0021      
 
 ## Repository Structure
 ```
