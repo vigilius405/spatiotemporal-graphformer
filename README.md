@@ -16,7 +16,13 @@ A deep learning framework for analyzing spatial dependencies in protein expressi
 - **Scale**: ~250,000+ cells across multiple tissue samples (GraphIDs)
 
 ### Key Findings
-Our analysis found that protein expression in colorectal cancer cells is strongly predictable from immediate spatial neighbors (k=5) for some protein markers, while being completely unpredictable for others. The GraphFormer is trained on the objective of predicting the protein expression in the current cell based on surrounding cells. This model outperformed a veriety of models (GAT, CDN, GraphSAGE, simple average baselines). Shown below are the top 5 best and bottom 5 worst predicted protein markers. Going through some of these proteins, we can see why their correlation is physiologically relevant: cytokeratin and CD34 are implicated in intercellualr adhesion, meaning cells that have high levels of these proteins are likely attached to other cells with high levels. The least correlated proteins are mostly cell surface markers of immune cells; this makes sense, as immune cells are more likely than other cell types to be traveling alone, surrounded by different cell types. Other than this relationship with immune cells, we did not find much to indicate that certain cell types were more correlated with their neighbors than others. Note that these results should also be tested on healthy tissue, and with larger cell numbers per sample. This dataset is simply a demonstration that spatial graphformers may provide interesting insights into the patterns of spatial proteomics.
+Our analysis found that protein expression in colorectal cancer cells is strongly predictable from immediate spatial neighbors (k=5-50) for some protein markers, while being completely unpredictable for others. The model is trained on the objective of predicting the protein expression in the current cell based on surrounding cells.
+
+**GraphFormer Insights** The GraphFormer architecture outperformed a veriety of models (GAT, CDN, GraphSAGE, simple average baselines). However, naive training of the GNN proved extreme overfitting of the data and required strong regularization techniques. When increasing the model input graph from 5 to 50 immediate spatial neighbors, 20 was determined to be the optimal for training models. Increasing the number of neighbors in the puts increased from 5 to 10 to 20, but did not significantly increase from 20 to 50. It is hypothesized that there is relevant graph signal from up to ~20 spatial neighbors, but increasing to 50 provides less meaningful improvements to signal over the reduction in training samples.
+
+**Biological Insights:** Shown below are the top 5 best and bottom 5 worst predicted protein markers. Going through some of these proteins, we can see why their correlation is physiologically relevant: cytokeratin and CD34 are implicated in intercellualr adhesion, meaning cells that have high levels of these proteins are likely attached to other cells with high levels. The least correlated proteins are mostly cell surface markers of immune cells; this makes sense, as immune cells are more likely than other cell types to be traveling alone, surrounded by different cell types. Other than this relationship with immune cells, we did not find much to indicate that certain cell types were more correlated with their neighbors than others. Note that these results should also be validated on healthy tissue and with larger numbers of cells per sample. This dataset serves primarily as a demonstration that spatial GraphFormers can reveal meaningful patterns in spatial proteomics within microenvironments of roughly 20 cells.
+
+**Model Evaluation**:
 
 Best predicted proteins:
 Protein                                                  R²  
@@ -34,7 +40,11 @@ CD25 - IL-2 Ra:Cyc_11_ch_4                           0.0875
 CD2 - T cells:Cyc_7_ch_4                             0.0499      
 LAG-3 - checkpoint:Cyc_8_ch_4                        0.0305     
 CD8 - cytotoxic T cells:Cyc_3_ch_2                  -0.0011     
-MUC-1 - epithelia:Cyc_7_ch_2                        -0.0021      
+MUC-1 - epithelia:Cyc_7_ch_2                        -0.0021  
+
+<img width="598" height="338" alt="Results of Final Model on Proteins" src="https://github.com/user-attachments/assets/db436df6-467f-42bc-b52f-53af62461c8f" />
+
+    
 
 ## Repository Structure
 ```
@@ -78,7 +88,9 @@ Similarly, the more advanced baselines can be tuned in the main function of trai
 python training_baselines.py
 ```
 
-### 4. Evaluation Metrics
+Example usage of model training and hyperparameter tuning can be followed in [Jupyter Notebook](./exploration.ipynb).
+
+### 2. Evaluation Metrics
 
 Models report:
 - **MSE Loss**: Mean squared error (training objective)
