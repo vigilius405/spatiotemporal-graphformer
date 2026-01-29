@@ -10,7 +10,7 @@ A geometric deep learning framework for analyzing spatial dependencies in protei
 3. Which cell types are most important in influencing their spatial neighborhoods?
 
 ### Dataset
-- **Source**: "Coordinated cellular neighborhoods orchestrate antitumoral immunity at the colorectal cancer invasive front" (https://data.mendeley.com/datasets/mpjzbtfgfr/1)
+- **Source**: ["Coordinated cellular neighborhoods orchestrate antitumoral immunity at the colorectal cancer invasive front"](https://data.mendeley.com/datasets/mpjzbtfgfr/1)
 - **Data**: Multiplexed imaging mass cytometry (IMC) data
 - **Features**: 57 protein markers per cell, spatial coordinates (X, Y, Z), cell metadata
 - **Scale**: ~250,000+ cells across multiple tissue samples (GraphIDs)
@@ -22,27 +22,47 @@ Our analysis found that protein expression in colorectal cancer cells is strongl
 
 **Biological Insights:** Shown below are the top 5 best and bottom 5 worst predicted protein markers. Going through some of these proteins, we can see why their correlation is physiologically relevant: cytokeratin and CD34 are implicated in intercellualr adhesion, meaning cells that have high levels of these proteins are likely attached to other cells with high levels. The least correlated proteins are mostly cell surface markers of immune cells; this makes sense, as immune cells are more likely than other cell types to be traveling alone, surrounded by different cell types. Other than this relationship with immune cells, we did not find much to indicate that certain cell types were more correlated with their neighbors than others. Note that these results should also be validated on healthy tissue and with larger numbers of cells per sample. This dataset serves primarily as a demonstration that spatial GraphFormers can reveal meaningful patterns in spatial proteomics within microenvironments of roughly 20 cells.
 
-Best predicted proteins:
-Protein                                                  R²  
----------------------------------------------------------------
-Cytokeratin - epithelia:Cyc_10_ch_2                  0.9622      
-Na-K-ATPase - membranes:Cyc_9_ch_2                   0.8859     
-CD34 - vasculature:Cyc_20_ch_3                       0.8695     
-CD138 - plasma cells:Cyc_21_ch_3                     0.8607     
-CD68 - macrophages:Cyc_18_ch_4                       0.8484     
+## Model Details
 
-Worst predicted proteins:
-Protein                                                  R²     
-----------------------------------------------------------------
-CD25 - IL-2 Ra:Cyc_11_ch_4                           0.0875     
-CD2 - T cells:Cyc_7_ch_4                             0.0499      
-LAG-3 - checkpoint:Cyc_8_ch_4                        0.0305     
-CD8 - cytotoxic T cells:Cyc_3_ch_2                  -0.0011     
-MUC-1 - epithelia:Cyc_7_ch_2                        -0.0021  
+### Best Predicted Proteins
+
+| Protein                                      | R²      |
+|---------------------------------------------|---------|
+| Cytokeratin - epithelia:Cyc_10_ch_2        | 0.9622  |
+| Na-K-ATPase - membranes:Cyc_9_ch_2         | 0.8859  |
+| CD34 - vasculature:Cyc_20_ch_3             | 0.8695  |
+| CD138 - plasma cells:Cyc_21_ch_3           | 0.8607  |
+| CD68 - macrophages:Cyc_18_ch_4             | 0.8484  |
+
+### Worst Predicted Proteins
+
+| Protein                                      | R²       |
+|---------------------------------------------|----------|
+| CD25 - IL-2 Ra:Cyc_11_ch_4                  | 0.0875   |
+| CD2 - T cells:Cyc_7_ch_4                    | 0.0499   |
+| LAG-3 - checkpoint:Cyc_8_ch_4               | 0.0305   |
+| CD8 - cytotoxic T cells:Cyc_3_ch_2          | -0.0011  |
+| MUC-1 - epithelia:Cyc_7_ch_2                | -0.0021  |   
 
 <img width="598" height="338" alt="Results of Final Model on Proteins" src="https://github.com/user-attachments/assets/db436df6-467f-42bc-b52f-53af62461c8f" />
 
-    
+### Reproducibility
+
+[Model weights](./graphformer_weights.pt) are saved.
+
+Model training can be reproduced with the following hyperparameters and seeds.
+
+| Hyperparameter   | Value    |
+|-----------------|----------|
+| max_neighbors    | 20       |
+| num_layers       | 3        |
+| lr               | 0.001    |
+| dropout          | 0.1      |
+| l2_reg           | 1e-05    |
+| hidden_dim       | 256      |
+| num_heads        | 4        |
+| seed             | 42       |
+
 
 ## Repository Structure
 ```
