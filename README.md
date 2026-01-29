@@ -1,6 +1,6 @@
 # Spatial Proteomics GraphFormer
 
-A deep learning framework for analyzing spatial dependencies in protein expression data from colorectal cancer tissue samples. This project investigates whether protein expression in individual cells can be predicted from their spatial neighborhood context using graph neural networks.
+A geometric deep learning framework for analyzing spatial dependencies in protein expression data from colorectal cancer tissue samples. This project investigates whether protein expression in individual cells can be predicted from their spatial neighborhood context with graph neural networks.
 
 ## Project Overview
 
@@ -21,8 +21,6 @@ Our analysis found that protein expression in colorectal cancer cells is strongl
 **GraphFormer Insights** The GraphFormer architecture outperformed a veriety of models (GAT, CDN, GraphSAGE, simple average baselines). However, naive training of the GNN proved extreme overfitting of the data and required strong regularization techniques. When increasing the model input graph from 5 to 50 immediate spatial neighbors, 20 was determined to be the optimal for training models. Increasing the number of neighbors in the puts increased from 5 to 10 to 20, but did not significantly increase from 20 to 50. It is hypothesized that there is relevant graph signal from up to ~20 spatial neighbors, but increasing to 50 provides less meaningful improvements to signal over the reduction in training samples.
 
 **Biological Insights:** Shown below are the top 5 best and bottom 5 worst predicted protein markers. Going through some of these proteins, we can see why their correlation is physiologically relevant: cytokeratin and CD34 are implicated in intercellualr adhesion, meaning cells that have high levels of these proteins are likely attached to other cells with high levels. The least correlated proteins are mostly cell surface markers of immune cells; this makes sense, as immune cells are more likely than other cell types to be traveling alone, surrounded by different cell types. Other than this relationship with immune cells, we did not find much to indicate that certain cell types were more correlated with their neighbors than others. Note that these results should also be validated on healthy tissue and with larger numbers of cells per sample. This dataset serves primarily as a demonstration that spatial GraphFormers can reveal meaningful patterns in spatial proteomics within microenvironments of roughly 20 cells.
-
-**Model Evaluation**:
 
 Best predicted proteins:
 Protein                                                  R²  
