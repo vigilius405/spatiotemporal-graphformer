@@ -62,6 +62,7 @@ Model training can be reproduced with the following hyperparameters and seeds.
 | hidden_dim       | 256      |
 | num_heads        | 4        |
 | seed             | 42       |
+| epochs           | 10       |
 
 
 ## Repository Structure
